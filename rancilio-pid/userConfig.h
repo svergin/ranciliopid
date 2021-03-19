@@ -25,6 +25,7 @@
 #define OFFLINEMODUS 0             // 0 = Blynk and Wifi are used, 1 = offline mode (only preconfigured values in code are used!)
 #define FALLBACK 1                 // 1 = fallback to values stored in eeprom, 0 = deactivated
 #define GRAFANA 1                  // 1 = grafana visualisation (access required), 0 = off (default)
+#define WIFIFALLBACK               // WIFI Portal for OTA FAllback in case of wrong SSID/PW for wlan 
 
 // PID & Hardware
 #define ONLYPID 1                  // 1 = Only PID, 0 = PID and preinfusion
