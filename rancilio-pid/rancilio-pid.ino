@@ -26,7 +26,12 @@
 #include <PubSubClient.h>
 #include "TSIC.h"       //Library for TSIC temp sensor
 #include <Adafruit_VL53L0X.h> //for TOF 
-
+#if (WIFIFALLBACK  == 1)
+#include <WiFiManager.h> // https://github.com/tzapu/WiFiManager
+bool portalRunning = false;
+int wifimanagerinit = 0;
+int wifimanagerfirstart = 0;
+#endif
 
 
 
@@ -646,7 +651,7 @@ void refreshTemp() {
        #if (ONE_WIRE_BUS != 16)
         Temperatur_C = Sensor2.getTemp();
        #endif
-      //Temperatur_C = 70;
+      Temperatur_C = 70;
       if (!checkSensor(Temperatur_C) && firstreading == 0) return;  //if sensor data is not valid, abort function; Sensor must be read at least one time at system startup
       Input = Temperatur_C;
       if (Brewdetection != 0) {
@@ -823,8 +828,17 @@ void checkWifi() {
     yield();  //Prevent WDT trigger
   } while ( !setupDone && wifiReconnects < maxWifiReconnects && WiFi.status() != WL_CONNECTED);   //if kaltstart ist still true when checkWifi() is called, then there was no WIFI connection at boot -> connect or offlinemode
 
-  if (wifiReconnects >= maxWifiReconnects && !setupDone) {   // no wifi connection after boot, initiate offline mode (only directly after boot)
+  if (wifiReconnects >= maxWifiReconnects && !setupDone && WIFIFALLBACK == 0) {   // no wifi connection after boot, initiate offline mode (only directly after boot)
     initOfflineMode();
+  }
+   if (wifiReconnects >= maxWifiReconnects && !setupDone && WIFIFALLBACK == 1) {   // no wifi connection after boot, initiate offline mode (only directly after boot)
+    wifimanagerinit = 1;
+    WiFi.disconnect();
+    // Start WIFI MANGER 
+    WiFiManager wm;
+    WiFi.mode(WIFI_STA); // explicitly set mode, esp defaults to STA+AP 
+    displayLogo("no WIFI ","ENTER WIFIPORTAL");
+
   }
 
 }
@@ -1519,11 +1533,75 @@ void setup() {
   #endif
   
 }
+
+void otafunction()
+{
+  ArduinoOTA.handle();  // For OTA
+    // Disable interrupt it OTA is starting, otherwise it will not work
+    ArduinoOTA.onStart([]() {
+      
+      #if defined(ESP8266) 
+      timer1_disable();
+      #endif
+      #if defined(ESP32) 
+      timerAlarmDisable(timer);
+      #endif
+      digitalWrite(pinRelayHeater, LOW); //Stop heating
+    });
+    ArduinoOTA.onError([](ota_error_t error) {
+      #if defined(ESP8266) 
+      timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
+      #endif
+      #if defined(ESP32) 
+      timerAlarmDisable(timer);
+      #endif
+    });
+    // Enable interrupts if OTA is finished
+    ArduinoOTA.onEnd([]() {
+      #if defined(ESP8266) 
+       timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
+      #endif
+      #if defined(ESP32)
+        timerAlarmEnable(timer);
+      #endif
+    });  
+ };
+
+
+
+
 void loop() {
   if (calibration_mode == 1 && TOF == 1) {
       loopcalibrate();
   } else {
+      if (wifimanagerinit == 0)
       looppid();
+      if (wifimanagerinit == 1)
+      loopwifimanager();
+  }
+}
+
+void loopwifimanager() 
+{
+  if(WL_CONNECTED){
+    ArduinoOTA.handle();
+    displayLogo("START", "OTA") ;
+  }
+  if(!portalRunning){
+    DEBUG_print("Starting Portal");
+      #if defined(ESP8266) 
+      timer1_disable();
+      #endif
+      #if defined(ESP32) 
+      timerAlarmDisable(timer);
+      #endif
+      WiFiManager wm;    
+      wm.startConfigPortal("OnDemandAP");
+      displayLogo("START", "WEB PORTAL") ;
+      ArduinoOTA.setHostname(OTAhost);  //  Device name for OTA
+      ArduinoOTA.setPassword(OTApass);  //  Password for OTA
+     ArduinoOTA.begin();
+     portalRunning = true;
   }
 }
 
@@ -1564,37 +1642,7 @@ void looppid() {
         mqtt.loop();
       }
     }
-
-    ArduinoOTA.handle();  // For OTA
-    // Disable interrupt it OTA is starting, otherwise it will not work
-    ArduinoOTA.onStart([]() {
-      
-      #if defined(ESP8266) 
-      timer1_disable();
-      #endif
-      #if defined(ESP32) 
-      timerAlarmDisable(timer);
-      #endif
-      digitalWrite(pinRelayHeater, LOW); //Stop heating
-    });
-    ArduinoOTA.onError([](ota_error_t error) {
-      #if defined(ESP8266) 
-      timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
-      #endif
-      #if defined(ESP32) 
-      timerAlarmDisable(timer);
-      #endif
-    });
-    // Enable interrupts if OTA is finished
-    ArduinoOTA.onEnd([]() {
-      #if defined(ESP8266) 
-       timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
-      #endif
-      #if defined(ESP32)
-        timerAlarmEnable(timer);
-      #endif
-    });
-
+  
     if (Blynk.connected()) {  // If connected run as normal
       Blynk.run();
       blynkReCnctCount = 0; //reset blynk reconnects if connected
