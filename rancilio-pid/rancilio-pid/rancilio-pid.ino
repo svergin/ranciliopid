@@ -957,7 +957,9 @@ void brewdetection()
           logbrew.reset();
         }
 
-        if (brewSteamDetectedQM == 1) 
+        //if (brewSteamDetectedQM == 1) 
+        const int minBrewDurationForSteamModeQM_ON = 10;
+        if (brewSteamDetectedQM == 1 && millis() - timePVStoON > minBrewDurationForSteamModeQM_ON)
         {
           if (pvs == VoltageSensorOFF)
           {
@@ -1216,9 +1218,11 @@ void machinestatevoid()
   10 = kaltstart
   19 = Setpoint -1 Celsius
   20 = Setpoint überschritten, idle at setpoint
-  30 = Bezug 
+  30 = Bezug
+  31 = Anzeige des Shottimers nach Bezugsende  
   35 = Nachlauf BD
   40 = Dampf
+  45 = Cooling Flush nach Dampf
   50 = Backflush
   80 = Emergency Stop
   90 = PID Offline
