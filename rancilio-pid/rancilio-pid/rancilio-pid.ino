@@ -958,7 +958,7 @@ void brewdetection()
         }
 
         //if (brewSteamDetectedQM == 1) 
-        const int minBrewDurationForSteamModeQM_ON = 25;
+        const int minBrewDurationForSteamModeQM_ON = 75;
         if (brewSteamDetectedQM == 1 && millis() - timePVStoON > minBrewDurationForSteamModeQM_ON)
         {
           if (pvs == VoltageSensorOFF)
