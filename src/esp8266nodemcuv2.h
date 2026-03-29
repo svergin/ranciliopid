@@ -10,7 +10,7 @@
 #define PINPUMP 13
 #define PINHEATER 14
 #define PINETRIGGER 16             // PIN for E-Trigger relay
-#define PINBREWSWITCH 0           // For switch, trigger or optocoupler 
+#define PINBREWSWITCH 15           // For switch, trigger or optocoupler 
 #define PINSTEAMSWITCH 99
 #define LEDPIN 99                  // LED PIN ON near setpoint
 #define OLED_SCL 5                 // Output pin for display clock pin

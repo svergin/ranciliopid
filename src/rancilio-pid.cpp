@@ -11,7 +11,7 @@
 #define FW_SUBVERSION 3
 #define FW_HOTFIX     0
 
-#define FW_BRANCH     "ESP8222-MASTER"
+#define FW_BRANCH     "ESP8266-MASTER"
 
 // User Config
 #include "userConfig.h"         // needs to be configured by the user
